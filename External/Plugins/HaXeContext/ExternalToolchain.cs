@@ -17,6 +17,7 @@ namespace HaXeContext
         static string projectPath;
         static WatcherEx watcher;
         static HaxeProject hxproj;
+        static MonitorState monitorState;
         static System.Timers.Timer updater;
 
         internal static bool HandleProject(IProject project)
@@ -148,29 +149,45 @@ namespace HaXeContext
             return true;
         }
 
+        [Flags]
+        private enum MonitorState
+        {
+            ProjectSwitch  = 1 << 0,
+            ProjectOnSame  = 1 << 1,  // When closing the changed PropertiesDialog
+            ProjectUpdate  = 1 << 2,
+            WatcherChange  = 1 << 3,
+        }
         /// <summary>
         /// Watch NME projects to update the configuration & HXML command using 'nme display'
         /// </summary>
         /// <param name="project"></param>
         public static void Monitor(IProject project)
         {
-            if (updater is null)
+            if (project is HaxeProject pj)
             {
-                updater = new System.Timers.Timer();
-                updater.Interval = 200;
-                updater.SynchronizingObject = (System.Windows.Forms.Form) PluginBase.MainForm;
-                updater.Elapsed += updater_Elapsed;
-                updater.AutoReset = false;
-            }
-
-            hxproj = null;
-            StopWatcher();
-
-            if (project is HaxeProject haxeProject)
-            {
-                hxproj = haxeProject;
-                hxproj.ProjectUpdating += hxproj_ProjectUpdating;
+                if (updater is null)
+                {
+                    updater = new System.Timers.Timer();
+                    updater.Interval = 200;
+                    updater.SynchronizingObject = (System.Windows.Forms.Form)PluginBase.MainForm;
+                    updater.Elapsed += updater_Elapsed;
+                    updater.AutoReset = false;
+                }
+                monitorState = MonitorState.ProjectSwitch;
+                if (hxproj == pj)
+                {
+                    monitorState |= MonitorState.ProjectOnSame;
+                }
+                else
+                {
+                    hxproj = pj;
+                    hxproj.ProjectUpdating += hxproj_ProjectUpdating;
+                }
                 hxproj_ProjectUpdating(hxproj);
+            }
+            else
+            {
+                StopWatcher();
             }
         }
 
@@ -189,17 +206,18 @@ namespace HaXeContext
                 StopWatcher();
                 return;
             }
-
-            var projectFile = hxproj.OutputPathAbsolute;
+            monitorState |= MonitorState.ProjectUpdate;
+            string projectFile = hxproj.OutputPathAbsolute;
             if (projectPath != projectFile)
             {
-                projectPath = projectFile;
                 StopWatcher();
+                projectPath = projectFile;
                 if (File.Exists(projectPath))
                 {
                     watcher = new WatcherEx(Path.GetDirectoryName(projectPath), Path.GetFileName(projectPath));
                     watcher.Changed += watcher_Changed;
                     watcher.EnableRaisingEvents = true;
+                    monitorState |= MonitorState.WatcherChange;
                     UpdateProject();
                 }
             }
@@ -208,6 +226,7 @@ namespace HaXeContext
 
         static void updater_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            monitorState = MonitorState.WatcherChange;
             UpdateProject();
             hxproj.PropertiesChanged();
         }
@@ -226,6 +245,9 @@ namespace HaXeContext
                 form.BeginInvoke((System.Windows.Forms.MethodInvoker)UpdateProject);
                 return;
             }
+            MonitorState state = monitorState;
+            monitorState = 0;
+
             if (hxproj.MovieOptions.Platform == "Lime" && string.IsNullOrEmpty(hxproj.TargetBuild)) return;
 
             var exe = GetExecutable(hxproj.MovieOptions.PlatformSupport.ExternalToolchain);
@@ -293,7 +315,11 @@ namespace HaXeContext
                         hxproj.TestMovieCommand = "";
                     }
                 }
-                hxproj.Save();
+
+                if (!state.HasFlag(MonitorState.ProjectOnSame))
+                {
+                    hxproj.Save();
+                }
             }
         }
 
