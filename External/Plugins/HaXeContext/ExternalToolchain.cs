@@ -2,6 +2,7 @@
 using ProjectManager.Projects.Haxe;
 using PluginCore;
 using System.Diagnostics;
+using System.Windows.Forms;
 using System.IO;
 using System.Linq;
 using PluginCore.Managers;
@@ -19,6 +20,7 @@ namespace HaXeContext
         static HaxeProject hxproj;
         static MonitorState monitorState;
         static System.Timers.Timer updater;
+        static ToolStripComboBoxEx targetBuildSelector;
 
         internal static bool HandleProject(IProject project)
         {
@@ -173,6 +175,14 @@ namespace HaXeContext
                     updater.Elapsed += updater_Elapsed;
                     updater.AutoReset = false;
                 }
+                if (targetBuildSelector == null)
+                {
+                    var items = PluginBase.MainForm.ToolStrip.Items.Find("TargetBuildSelector", false);
+                    if (items.Length == 1)
+                    {
+                        targetBuildSelector = items[0] as ToolStripComboBoxEx;
+                    }
+                }
                 monitorState = MonitorState.ProjectSwitch;
                 if (hxproj == pj)
                 {
@@ -221,7 +231,10 @@ namespace HaXeContext
                     UpdateProject();
                 }
             }
-            else UpdateProject();
+            else
+            {
+                UpdateProject();
+            }
         }
 
         static void updater_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -229,6 +242,7 @@ namespace HaXeContext
             monitorState = MonitorState.WatcherChange;
             UpdateProject();
             hxproj.PropertiesChanged();
+            targetBuildSelector_Update();
         }
 
         static void watcher_Changed(object sender, FileSystemEventArgs e)
@@ -237,7 +251,25 @@ namespace HaXeContext
             updater.Enabled = true;
         }
 
-        static void UpdateProject()
+        static void targetBuildSelector_Update()
+        {
+            if (targetBuildSelector != null && hxproj.MovieOptions.Platform == "hxml")
+            {
+                targetBuildSelector.Items.Clear();
+                string[] labels = hxproj.MovieOptions.TargetBuildTypes;
+                if (labels != null && labels.Length > 0)
+                {
+                    targetBuildSelector.Items.AddRange(labels);
+                    targetBuildSelector.Text = hxproj.TargetBuild;
+                }
+                else
+                {
+                    targetBuildSelector.Text = "";
+                }
+            }
+        }
+
+        private static void UpdateProject()
         {
             var form = (System.Windows.Forms.Form) PluginBase.MainForm;
             if (form.InvokeRequired)
@@ -249,6 +281,8 @@ namespace HaXeContext
             monitorState = 0;
 
             if (hxproj.MovieOptions.Platform == "Lime" && string.IsNullOrEmpty(hxproj.TargetBuild)) return;
+
+            if (hxproj.MovieOptions.Platform == "hxml" && !(hxproj.MultiHxml.Count == 0 || state.HasFlag(MonitorState.WatcherChange))) return;
 
             var exe = GetExecutable(hxproj.MovieOptions.PlatformSupport.ExternalToolchain);
             if (exe is null) return;
