@@ -555,7 +555,7 @@ namespace ProjectManager.Projects.Haxe
                 dup.Add(this);
                 foreach(var item in dup)
                 {
-                    item.Label = "--" + item.Target + " " + Path.GetFileName(item.Output);
+                    item.Label = item.Target.ToUpper() + " " + Path.GetFileName(item.Output);
                 }
             }
             list.Add(this);
