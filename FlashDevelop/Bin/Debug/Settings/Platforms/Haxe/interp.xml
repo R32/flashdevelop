@@ -1,0 +1,5 @@
+<platform name="Interp" haxe-target="-interp">
+  <versions>
+    <version value="1.0" />
+  </versions>
+</platform>
