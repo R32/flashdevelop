@@ -228,13 +228,10 @@ namespace HaXeContext
                     watcher.Changed += watcher_Changed;
                     watcher.EnableRaisingEvents = true;
                     monitorState |= MonitorState.WatcherChange;
-                    UpdateProject();
                 }
             }
-            else
-            {
-                UpdateProject();
-            }
+            UpdatePreBuildEvent();
+            UpdateProject();
         }
 
         static void updater_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -242,7 +239,7 @@ namespace HaXeContext
             monitorState = MonitorState.WatcherChange;
             UpdateProject();
             hxproj.PropertiesChanged();
-            targetBuildSelector_Update();
+            UpdateTargetBuildSelector();
         }
 
         static void watcher_Changed(object sender, FileSystemEventArgs e)
@@ -251,7 +248,7 @@ namespace HaXeContext
             updater.Enabled = true;
         }
 
-        static void targetBuildSelector_Update()
+        static void UpdateTargetBuildSelector()
         {
             if (targetBuildSelector != null && hxproj.MovieOptions.Platform == "hxml")
             {
@@ -265,6 +262,42 @@ namespace HaXeContext
                 else
                 {
                     targetBuildSelector.Text = "";
+                }
+            }
+        }
+
+        private static void UpdatePreBuildEvent()
+        {
+            var exe = GetExecutable(hxproj.MovieOptions.PlatformSupport.ExternalToolchain);
+            if (exe is null) return;
+            var args = GetCommand(hxproj, "build", false);
+            if (args is null)
+            {
+                TraceManager.Add($"No external 'build' command found for platform '{hxproj.MovieOptions.Platform}'", -3);
+            }
+            else
+            {
+                string prebuild = "";
+                if (hxproj.MovieOptions.PlatformSupport.ExternalToolchain == "haxelib") prebuild = "\"$(CompilerPath)/haxelib\" " + args;
+                else if (hxproj.MovieOptions.PlatformSupport.ExternalToolchain == "cmd") prebuild = "cmd " + args;
+                else prebuild = "\"" + exe + "\" " + args;
+                if (hxproj.MovieOptions.Platform == "hxml" && hxproj.OutputType == OutputType.Application)
+                {
+                    if (hxproj.PreBuildEvent == prebuild) hxproj.PreBuildEvent = "";
+                }
+                else if (string.IsNullOrEmpty(hxproj.PreBuildEvent))
+                {
+                    hxproj.PreBuildEvent = prebuild;
+                }
+            }
+            var run = GetCommand(hxproj, "run");
+            if (run != null)
+            {
+                hxproj.OutputType = OutputType.CustomBuild;
+                if (hxproj.TestMovieBehavior == TestMovieBehavior.Default)
+                {
+                    hxproj.TestMovieBehavior = TestMovieBehavior.Custom;
+                    hxproj.TestMovieCommand = "";
                 }
             }
         }
@@ -326,29 +359,6 @@ namespace HaXeContext
                 hxml = hxml.Replace("--macro keep", "#--macro keep"); // TODO remove this hack
                 hxml = Regex.Replace(hxml, "(-[a-z0-9-]+)\\s*[\r\n]+([^-#])", "$1 $2", RegexOptions.IgnoreCase);
                 hxproj.RawHXML = Regex.Split(hxml, "[\r\n]+");
-
-                args = GetCommand(hxproj, "build", false);
-                if (args is null)
-                {
-                    TraceManager.Add($"No external 'build' command found for platform '{hxproj.MovieOptions.Platform}'", -3);
-                }
-                else if (string.IsNullOrEmpty(hxproj.PreBuildEvent))
-                {
-                    if (hxproj.MovieOptions.PlatformSupport.ExternalToolchain == "haxelib") hxproj.PreBuildEvent = "\"$(CompilerPath)/haxelib\" " + args;
-                    else if (hxproj.MovieOptions.PlatformSupport.ExternalToolchain == "cmd") hxproj.PreBuildEvent = "cmd " + args;
-                    else hxproj.PreBuildEvent = "\"" + exe + "\" " + args;
-                }
-
-                var run = GetCommand(hxproj, "run");
-                if (run != null)
-                {
-                    hxproj.OutputType = OutputType.CustomBuild;
-                    if (hxproj.TestMovieBehavior == TestMovieBehavior.Default)
-                    {
-                        hxproj.TestMovieBehavior = TestMovieBehavior.Custom;
-                        hxproj.TestMovieCommand = "";
-                    }
-                }
 
                 if (!state.HasFlag(MonitorState.ProjectOnSame))
                 {
