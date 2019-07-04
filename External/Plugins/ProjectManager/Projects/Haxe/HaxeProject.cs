@@ -17,12 +17,12 @@ namespace ProjectManager.Projects.Haxe
 
         protected string[] rawHXML;
 
-        public List<SingleHxml> MultiHxml { get; private set;}
+        public List<SingleTarget> MultiHxml { get; private set;}
 
         public HaxeProject(string path) : base(path, new HaxeOptions())
         {
             movieOptions = new HaxeMovieOptions();
-            MultiHxml = new List<SingleHxml>();
+            MultiHxml = new List<SingleTarget>();
         }
 
         public override string Language => "haxe";
@@ -337,14 +337,14 @@ namespace ProjectManager.Projects.Haxe
                 raw = null;
             rawHXML = raw;
             MultiHxml.Clear();
-            SingleHxml common = new SingleHxml() { Cwd = "." };
-            SingleHxml current = common;
+            SingleTarget common = new SingleTarget() { Cwd = "." };
+            SingleTarget current = common;
             bool hasEach = false;
             if (raw != null) ParseHxmlEntries(raw, common, ref current, ref hasEach, false);
             TargetSelect(current);
         }
 
-        public void TargetSelect(SingleHxml current)
+        public void TargetSelect(SingleTarget current)
         {
             string[] labels = new string[MultiHxml.Count];
             int i = 0;
@@ -392,7 +392,7 @@ namespace ProjectManager.Projects.Haxe
 
         private static readonly Regex reHxOp = new Regex("^-([a-z0-9-]+)\\s*(.*)", RegexOptions.IgnoreCase);
 
-        private void ParseHxmlEntries(string[] lines, SingleHxml common, ref SingleHxml current, ref bool hasEach, bool isSub)
+        public void ParseHxmlEntries(string[] lines, SingleTarget common, ref SingleTarget current, ref bool hasEach, bool isSub)
         {
             foreach (string line in lines)
             {
@@ -409,11 +409,7 @@ namespace ProjectManager.Projects.Haxe
                     string op = m.Groups[1].Value;
                     if (op == "-each")
                     {
-                        if (hasEach || common != current || current.Target != null)
-                        {
-                            //TraceManager.Add("invalid --each");
-                        }
-                        else
+                        if (!hasEach)
                         {
                             hasEach = true;
                             current = common.Duplicate();
@@ -436,16 +432,8 @@ namespace ProjectManager.Projects.Haxe
                             current.MainClass = value;
                             break;
                         case "-next":
-                            current.InsertTo(MultiHxml);
-                            current = hasEach ? common.Duplicate() : new SingleHxml() { Cwd = "." };
-                            break;
-                        case "-interp":
-                            current.Target = "interp";
-                            current.Output = "";
-                            break;
-                        case "lua": case "-lua":       // since there's no lua.xml in "/Settings".
-                            current.Target = "lua";
-                            current.Output = value;
+                            current.InsertToIfTarget(MultiHxml);
+                            current = hasEach ? common.Duplicate() : new SingleTarget() { Cwd = "." };
                             break;
                         case "-connect": case "-wait":
                             break;
@@ -453,17 +441,17 @@ namespace ProjectManager.Projects.Haxe
                             current.Cwd = this.CleanPath(value, current.Cwd);
                             break;
                         default:
-                            // detect platform (-cpp output, -js output, ...)
                             var targetPlatform = FindPlatform(op);
-                            if (targetPlatform != null)
-                            {
-                                // if (current.Target != null) TraceManager.Add("forgot add --next?"); 
-                                current.Target = targetPlatform.HaxeTarget;
-                                current.Output = value;
-                            }
-                            else
+                            if (targetPlatform is null)
                             {
                                 current.Adds.Add(trimmedLine);
+                            }
+                            else if (string.IsNullOrEmpty(current.Target))
+                            {
+                                current.Target = targetPlatform.HaxeTarget;
+                                current.Name = targetPlatform.Name;
+                                current.Label = targetPlatform.Name;
+                                current.Output = value;
                             }
                             break;
                     }
@@ -487,13 +475,13 @@ namespace ProjectManager.Projects.Haxe
 
             if (!isSub)
             {
-                current.InsertTo(MultiHxml);
+                current.InsertToIfTarget(MultiHxml);
             }
         }
 
         private LanguagePlatform FindPlatform(string op)
         {
-            if (op[0] == '-')
+            if (op[0] == '-' && op != "-interp")
             {
                 op = op.Substring(1);
             }
@@ -520,12 +508,12 @@ namespace ProjectManager.Projects.Haxe
         #endregion
     }
 
-    #region SingleHxml
-
-    public class SingleHxml
+    #region SingleTarget
+    public class SingleTarget
     {
-        public string Label { get; internal set; }       // will be display in TargetSelect
-        public string Target { get; internal set; }      // required haxeTarget. e.g: js, hl, flash, cpp, ....
+        public string Label { get; internal set; }      // Used to distinguish if there are multiple equal "Names"
+        public string Name { get; internal set; }       // Same as Platform.Name which is used for FBuild to get HaxeTarget
+        public string Target { get; internal set; }     // Same as Platform.HaxeTarget. e.g: js, hl, swf, cpp, ....
         public string Output { get; internal set; }
         public string MainClass { get; internal set; }
         public string Cwd { get; internal set; }
@@ -534,7 +522,7 @@ namespace ProjectManager.Projects.Haxe
         public List<string> Defs { get; internal set; }
         public List<string> Adds { get; internal set; }
 
-        internal SingleHxml()
+        internal SingleTarget()
         {
             MainClass = "";
             Cps = new List<string>();
@@ -543,38 +531,39 @@ namespace ProjectManager.Projects.Haxe
             Adds = new List<string>();
         }
 
-        internal void InitLable()
+        internal void LabelHack()
         {
-            Label = Target;
-            if (Label == "hl" && Output.EndsWith(".c"))
+            if (Target == "hl" && Output.EndsWith(".c", StringComparison.OrdinalIgnoreCase))
             {
-                Label = "hlc";
+                Label = "HL C";
             }
-            else if (Label == "swf")
+            else if (Target == "swf" && Output.EndsWith(".swc", StringComparison.OrdinalIgnoreCase))
             {
-                Label = Output.EndsWith(".swc") ? ("swc " + Path.GetFileNameWithoutExtension(Output)) : "flash";
+                Label = "Flash SWC";
             }
         }
 
-        internal void InsertTo(List<SingleHxml> list)
+        internal void InsertToIfTarget(List<SingleTarget> list)
         {
-            if (this.Target == null) return;
-            InitLable();
+            if ( string.IsNullOrEmpty(this.Target) ) return;
+            LabelHack();
+            var dup = new List<SingleTarget>();
             foreach (var item in list)
+                if (item.Label == Label) dup.Add(item);
+            if (dup.Count > 0)
             {
-                if (item.Label == Label)
+                dup.Add(this);
+                foreach(var item in dup)
                 {
-                    item.Label += " " + Path.GetFileNameWithoutExtension(item.Output);
-                    this.Label += " " + Path.GetFileNameWithoutExtension(this.Output);
-                    if (item.Label == Label) return; // skip if still get conflict
+                    item.Label = "--" + item.Target + " " + Path.GetFileName(item.Output);
                 }
             }
             list.Add(this);
         }
-
-        internal SingleHxml Duplicate()
+        // Clone without .Target
+        internal SingleTarget Duplicate()
         {
-            SingleHxml ret = new SingleHxml() { MainClass = this.MainClass, Cwd = this.Cwd, };
+            SingleTarget ret = new SingleTarget() { MainClass = this.MainClass, Cwd = this.Cwd, };
             ret.Cps.AddRange(this.Cps);
             ret.Libs.AddRange(this.Libs);
             ret.Defs.AddRange(this.Defs);
