@@ -26,10 +26,28 @@ namespace ProjectManager.Building.Haxe
         {
             Environment.CurrentDirectory = project.Directory;
 
-            string output = project.FixDebugReleasePath(project.OutputPathAbsolute);
-            string outputDir = Path.GetDirectoryName(project.OutputPathAbsolute);
-            if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
-
+            string output = project.FixDebugReleasePath(project.OutputPathAbsolute).TrimEnd('\\', '/');
+            if (project.MovieOptions.Platform == "hxml")
+            {
+                project.MultiHxml.Clear();
+                SingleTarget common = new SingleTarget() { Cwd = "." };
+                SingleTarget dummy = common;
+                bool hasEach = false;
+                project.ParseHxmlEntries(System.IO.File.ReadAllLines(output), common, ref dummy, ref hasEach, false);
+                var label = FDBuild.Program.BuildOptions.TargetBuild;
+                output = "";
+                foreach (var current in project.MultiHxml)
+                {
+                    if (current.Label == label)
+                    {
+                        project.TargetSelect(current);
+                        project.MovieOptions.Platform = current.Name;
+                        output = current.Output;
+                        break;
+                    }
+                }
+                project.MultiHxml.Clear();
+            }
             string serverPort = Environment.ExpandEnvironmentVariables("%HAXE_SERVER_PORT%");
             string connect = (!serverPort.StartsWith("%", StringComparison.Ordinal) && serverPort != "0")
                 ? "--connect " + serverPort : "";
@@ -49,7 +67,6 @@ namespace ProjectManager.Building.Haxe
                 // if we have any resources, build our library file and run swfmill on it
                 libraryBuilder.BuildLibrarySwf(project, false);
             }
-            output = output.TrimEnd('\\', '/');
             string haxeArgs = connect + " " + String.Join(" ", project.BuildHXML(extraClasspaths, output, noTrace));
             
             Console.WriteLine("haxe " + haxeArgs);
