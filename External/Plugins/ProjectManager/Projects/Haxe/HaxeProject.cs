@@ -366,10 +366,10 @@ namespace ProjectManager.Projects.Haxe
             if (MovieOptions.HasPlatformSupport)
             {
                 var platform = MovieOptions.PlatformSupport;
-                if (platform.Name == "hxml" && i > 0)
+                if (platform.Name == "hxml")
                 {
                     MovieOptions.TargetBuildTypes = labels;
-                    TargetBuild = current.Label;
+                    TargetBuild = current.Label ?? "";
                 }
                 else
                 {

@@ -230,6 +230,11 @@ namespace HaXeContext
                     monitorState |= MonitorState.WatcherChange;
                 }
             }
+            else if (!monitorState.HasFlag(MonitorState.ProjectSwitch))
+            {
+                foreach (var item in hxproj.MultiHxml)
+                    if (item.Label == hxproj.TargetBuild) hxproj.TargetSelect(item);
+            }
             UpdatePreBuildEvent();
             UpdateProject();
         }
