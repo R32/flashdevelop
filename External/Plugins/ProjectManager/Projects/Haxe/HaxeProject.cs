@@ -19,10 +19,13 @@ namespace ProjectManager.Projects.Haxe
 
         public List<SingleTarget> MultiHXML { get; private set;}
 
+        public DumpConfig Dump;
+
         public HaxeProject(string path) : base(path, new HaxeOptions())
         {
             movieOptions = new HaxeMovieOptions();
             MultiHXML = new List<SingleTarget>();
+            Dump = new DumpConfig();
         }
 
         public override string Language => "haxe";
@@ -221,6 +224,11 @@ namespace ProjectManager.Projects.Haxe
                 foreach (var def in CompilerOptions.Directives)
                     pr.Add("-D " + Quote(def));
 
+                if (Dump.Mode != "")
+                {
+                    pr.Add(Dump.Mode == "default" ? "-D dump" : "-D dump=" + Dump.Mode);
+                }
+
                 // add project files marked as "always compile"
                 foreach (var relTarget in CompileTargets)
                 {
@@ -355,8 +363,20 @@ namespace ProjectManager.Projects.Haxe
             }
             if (i > 0 && current.Label != TargetBuild) current = MultiHXML[0];
 
+            Dump.ModeReset();
+            var defs = Array.FindAll(current.Defs.ToArray(), delegate(string item) {
+                if (item.StartsWith("dump") && (item.Length == 4 || (item.Length > 4 && item[4] == '=')))
+                {
+                    Dump.Mode = "default"; // the default mode if -D dump or "-D dump="
+                    if (item.Length > 5)
+                        Dump.Mode = item.Substring(5).ToLower();
+                    return false;
+                }
+                return true;
+            });
+
             CompilerOptions.MainClass = current.MainClass;
-            CompilerOptions.Directives = current.Defs.ToArray();
+            CompilerOptions.Directives = defs.ToArray();
             CompilerOptions.Libraries = current.Libs.ToArray();
             CompilerOptions.Additional = current.Adds.ToArray();
             if (current.Cps.Count == 0) current.Cps.Add(".");
@@ -523,6 +543,44 @@ namespace ProjectManager.Projects.Haxe
 
         #endregion
     }
+
+    #region DumpConfig
+    public class DumpConfig
+    {
+        public static string[] All { get; } = {"", "default" ,"pretty", "record", "position", "legacy"};
+
+        private string mode;
+
+        public DumpConfig()
+        {
+            ModeReset();
+        }
+
+        public string Mode
+        {
+            get
+            {
+                return mode;
+            }
+            set
+            {
+                foreach (var item in All)
+                {
+                    if (item == value)
+                    {
+                        mode = item;
+                        break;
+                    }
+                }
+            }
+        }
+
+        public void ModeReset()
+        {
+            mode = All[0];
+        }
+    }
+    #endregion
 
     #region SingleTarget
     public class SingleTarget

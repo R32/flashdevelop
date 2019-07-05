@@ -21,6 +21,7 @@ namespace HaXeContext
         static MonitorState monitorState;
         static System.Timers.Timer updater;
         static ToolStripComboBoxEx targetBuildSelector;
+        static ToolStripComboBoxEx dumpSelector;
 
         internal static bool HandleProject(IProject project)
         {
@@ -175,13 +176,34 @@ namespace HaXeContext
                     updater.Elapsed += updater_Elapsed;
                     updater.AutoReset = false;
                 }
-                if (targetBuildSelector == null)
+                if (targetBuildSelector is null)
                 {
                     var items = PluginBase.MainForm.ToolStrip.Items.Find("TargetBuildSelector", false);
                     if (items.Length == 1)
                     {
                         targetBuildSelector = items[0] as ToolStripComboBoxEx;
                     }
+                }
+                if (dumpSelector is null)
+                {
+                    dumpSelector = new ToolStripComboBoxEx
+                    {
+                        Name = "DumpSelector",
+                        ToolTipText = "Select Dump Mode",
+                        AutoSize = false,
+                        Width = 60,
+                        Margin = new Padding(1, 0, 0, 0),
+                        DropDownStyle = ComboBoxStyle.DropDownList,
+                        FlatStyle = PluginBase.MainForm.Settings.ComboBoxFlatStyle,
+                        Font = PluginBase.Settings.DefaultFont,
+                    };
+                    dumpSelector.Items.AddRange(DumpConfig.All);
+                    dumpSelector.FlatCombo.SelectionChangeCommitted += delegate { hxproj.Dump.Mode = dumpSelector.Text; };
+                    PluginBase.MainForm.ToolStrip.Items.Add(dumpSelector);
+                }
+                else if (!dumpSelector.Visible)
+                {
+                    dumpSelector.Visible = true;
                 }
                 monitorState = MonitorState.ProjectSwitch;
                 if (hxproj == pj)
@@ -197,6 +219,7 @@ namespace HaXeContext
             }
             else
             {
+                if (dumpSelector != null) dumpSelector.Visible = false;
                 StopWatcher();
             }
         }
@@ -237,6 +260,7 @@ namespace HaXeContext
                     if (item.Label == hxproj.TargetBuild)
                     {
                         hxproj.TargetSelect(item);
+                        dumpSelector.Text = hxproj.Dump.Mode;
                         break;
                     }
                 }
@@ -370,6 +394,8 @@ namespace HaXeContext
                 hxml = hxml.Replace("--macro keep", "#--macro keep"); // TODO remove this hack
                 hxml = Regex.Replace(hxml, "(-[a-z0-9-]+)\\s*[\r\n]+([^-#])", "$1 $2", RegexOptions.IgnoreCase);
                 hxproj.RawHXML = Regex.Split(hxml, "[\r\n]+");
+
+                dumpSelector.Text = hxproj.Dump.Mode;
 
                 if (!state.HasFlag(MonitorState.ProjectOnSame))
                 {

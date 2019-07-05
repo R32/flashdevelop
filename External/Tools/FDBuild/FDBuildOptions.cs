@@ -60,6 +60,9 @@ namespace FDBuild
         [Option("Connect to FlashDevelop's remoting services using the specified IPC name (optional)", "ipc")]
         public string IpcName = null;
 
+        [Option("Haxe -D dump=mode", "dump")]
+        public string DumpMode;
+
         public string Language
         {
             set

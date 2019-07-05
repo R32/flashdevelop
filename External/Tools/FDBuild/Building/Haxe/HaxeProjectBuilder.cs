@@ -67,13 +67,22 @@ namespace ProjectManager.Building.Haxe
                 // if we have any resources, build our library file and run swfmill on it
                 libraryBuilder.BuildLibrarySwf(project, false);
             }
+            ;
+            if (FDBuild.Program.BuildOptions.DumpMode != null)
+            {
+                project.CompilerOptions.Directives = Array.FindAll(project.CompilerOptions.Directives, delegate (string item) {
+                    return (item.StartsWith("dump") && (item.Length == 4 || (item.Length > 4 && item[4] == '='))) ? false : true;
+                });
+                project.Dump.Mode = FDBuild.Program.BuildOptions.DumpMode;
+            }
             string haxeArgs = connect + " " + String.Join(" ", project.BuildHXML(extraClasspaths, output, noTrace));
-            
             Console.WriteLine("haxe " + haxeArgs);
 
             if (!ProcessRunner.Run(haxePath, haxeArgs, false, false))
                 throw new BuildException("Build halted with errors (haxe.exe).");
         }
+
+
 
         /*private string[] BuildNmeCommand(string[] extraClasspaths, string output, string target, bool noTrace, string extraArgs)
         {
