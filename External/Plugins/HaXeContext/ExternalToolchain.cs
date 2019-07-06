@@ -230,10 +230,16 @@ namespace HaXeContext
                     monitorState |= MonitorState.WatcherChange;
                 }
             }
-            else if (!monitorState.HasFlag(MonitorState.ProjectSwitch))
+            else if (!monitorState.HasFlag(MonitorState.ProjectSwitch) && hxproj.MovieOptions.Platform == "hxml")
             {
                 foreach (var item in hxproj.MultiHxml)
-                    if (item.Label == hxproj.TargetBuild) hxproj.TargetSelect(item);
+                {
+                    if (item.Label == hxproj.TargetBuild)
+                    {
+                        hxproj.TargetSelect(item);
+                        break;
+                    }
+                }
             }
             UpdatePreBuildEvent();
             UpdateProject();

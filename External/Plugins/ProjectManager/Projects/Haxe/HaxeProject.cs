@@ -432,7 +432,7 @@ namespace ProjectManager.Projects.Haxe
                             current.MainClass = value;
                             break;
                         case "-next":
-                            current.InsertToIfTarget(MultiHxml);
+                            current.SafelyInsertTo(MultiHxml);
                             current = hasEach ? common.Duplicate() : new SingleTarget() { Cwd = "." };
                             break;
                         case "-connect": case "-wait":
@@ -475,7 +475,7 @@ namespace ProjectManager.Projects.Haxe
 
             if (!isSub)
             {
-                current.InsertToIfTarget(MultiHxml);
+                current.SafelyInsertTo(MultiHxml);
             }
         }
 
@@ -543,7 +543,7 @@ namespace ProjectManager.Projects.Haxe
             }
         }
 
-        internal void InsertToIfTarget(List<SingleTarget> list)
+        internal void SafelyInsertTo(List<SingleTarget> list)
         {
             if ( string.IsNullOrEmpty(this.Target) ) return;
             LabelHack();
