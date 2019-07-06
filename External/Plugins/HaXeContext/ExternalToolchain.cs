@@ -232,7 +232,7 @@ namespace HaXeContext
             }
             else if (!monitorState.HasFlag(MonitorState.ProjectSwitch) && hxproj.MovieOptions.Platform == "hxml")
             {
-                foreach (var item in hxproj.MultiHxml)
+                foreach (var item in hxproj.MultiHXML)
                 {
                     if (item.Label == hxproj.TargetBuild)
                     {
@@ -326,7 +326,7 @@ namespace HaXeContext
 
             if (hxproj.MovieOptions.Platform == "Lime" && string.IsNullOrEmpty(hxproj.TargetBuild)) return;
 
-            if (hxproj.MovieOptions.Platform == "hxml" && !(hxproj.MultiHxml.Count == 0 || state.HasFlag(MonitorState.WatcherChange))) return;
+            if (hxproj.MovieOptions.Platform == "hxml" && !(hxproj.MultiHXML.Count == 0 || state.HasFlag(MonitorState.WatcherChange))) return;
 
             var exe = GetExecutable(hxproj.MovieOptions.PlatformSupport.ExternalToolchain);
             if (exe is null) return;

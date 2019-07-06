@@ -29,14 +29,14 @@ namespace ProjectManager.Building.Haxe
             string output = project.FixDebugReleasePath(project.OutputPathAbsolute).TrimEnd('\\', '/');
             if (project.MovieOptions.Platform == "hxml")
             {
-                project.MultiHxml.Clear();
+                project.MultiHXML.Clear();
                 SingleTarget common = new SingleTarget() { Cwd = "." };
                 SingleTarget dummy = common;
                 bool hasEach = false;
-                project.ParseHxmlEntries(System.IO.File.ReadAllLines(output), common, ref dummy, ref hasEach, false);
+                project.ParseHXMLInner(System.IO.File.ReadAllLines(output), common, ref dummy, ref hasEach, false);
                 var label = FDBuild.Program.BuildOptions.TargetBuild;
                 output = "";
-                foreach (var current in project.MultiHxml)
+                foreach (var current in project.MultiHXML)
                 {
                     if (current.Label == label)
                     {
@@ -46,7 +46,7 @@ namespace ProjectManager.Building.Haxe
                         break;
                     }
                 }
-                project.MultiHxml.Clear();
+                project.MultiHXML.Clear();
             }
             string serverPort = Environment.ExpandEnvironmentVariables("%HAXE_SERVER_PORT%");
             string connect = (!serverPort.StartsWith("%", StringComparison.Ordinal) && serverPort != "0")

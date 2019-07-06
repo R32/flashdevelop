@@ -429,7 +429,7 @@ namespace ProjectManager.Actions
                 if (platform == "hxml" && (project is HaxeProject hxproj))
                 {
                     info["targetBuild"] = "";
-                    foreach (var hxml in hxproj.MultiHxml)
+                    foreach (var hxml in hxproj.MultiHXML)
                     {
                         if (hxml.Label == project.TargetBuild)
                         {

@@ -17,12 +17,12 @@ namespace ProjectManager.Projects.Haxe
 
         protected string[] rawHXML;
 
-        public List<SingleTarget> MultiHxml { get; private set;}
+        public List<SingleTarget> MultiHXML { get; private set;}
 
         public HaxeProject(string path) : base(path, new HaxeOptions())
         {
             movieOptions = new HaxeMovieOptions();
-            MultiHxml = new List<SingleTarget>();
+            MultiHXML = new List<SingleTarget>();
         }
 
         public override string Language => "haxe";
@@ -336,24 +336,24 @@ namespace ProjectManager.Projects.Haxe
             if (raw != null && (raw.Length == 0 || raw[0] is null))
                 raw = null;
             rawHXML = raw;
-            MultiHxml.Clear();
+            MultiHXML.Clear();
             SingleTarget common = new SingleTarget() { Cwd = "." };
             SingleTarget current = common;
             bool hasEach = false;
-            if (raw != null) ParseHxmlEntries(raw, common, ref current, ref hasEach, false);
+            if (raw != null) ParseHXMLInner(raw, common, ref current, ref hasEach, false);
             TargetSelect(current);
         }
 
         public void TargetSelect(SingleTarget current)
         {
-            string[] labels = new string[MultiHxml.Count];
+            string[] labels = new string[MultiHXML.Count];
             int i = 0;
-            foreach (var item in MultiHxml)
+            foreach (var item in MultiHXML)
             {
                 labels[i++] = item.Label;
                 if (TargetBuild == item.Label) current = item;
             }
-            if (i > 0 && current.Label != TargetBuild) current = MultiHxml[0];
+            if (i > 0 && current.Label != TargetBuild) current = MultiHXML[0];
 
             CompilerOptions.MainClass = current.MainClass;
             CompilerOptions.Directives = current.Defs.ToArray();
@@ -392,8 +392,9 @@ namespace ProjectManager.Projects.Haxe
 
         private static readonly Regex reHxOp = new Regex("^-([a-z0-9-]+)\\s*(.*)", RegexOptions.IgnoreCase);
 
-        public void ParseHxmlEntries(string[] lines, SingleTarget common, ref SingleTarget current, ref bool hasEach, bool isSub)
+        public void ParseHXMLInner(string[] lines, SingleTarget common, ref SingleTarget current, ref bool hasEach, bool isSub)
         {
+
             foreach (string line in lines)
             {
                 string trimmedLine = line.Trim();
@@ -432,7 +433,7 @@ namespace ProjectManager.Projects.Haxe
                             current.MainClass = value;
                             break;
                         case "-next":
-                            current.SafelyInsertTo(MultiHxml);
+                            current.SafelyInsertTo(MultiHXML);
                             current = hasEach ? common.Duplicate() : new SingleTarget() { Cwd = "." };
                             break;
                         case "-connect": case "-wait":
@@ -463,7 +464,7 @@ namespace ProjectManager.Projects.Haxe
                         string subhxml = this.GetAbsolutePath(CleanPath(trimmedLine, current.Cwd));
                         if (File.Exists(subhxml))
                         {
-                            ParseHxmlEntries(File.ReadAllLines(subhxml), common, ref current, ref hasEach, true);
+                            ParseHXMLInner(File.ReadAllLines(subhxml), common, ref current, ref hasEach, true);
                         }
                     }
                     else
@@ -472,10 +473,18 @@ namespace ProjectManager.Projects.Haxe
                     }
                 }
             }
-
             if (!isSub)
             {
-                current.SafelyInsertTo(MultiHxml);
+                current.SafelyInsertTo(MultiHXML);
+                // checking if duplicate
+                var dict = new Dictionary<string, int>();
+                var count = 0;
+                foreach (var item in MultiHXML)
+                    dict[item.Label] = dict.TryGetValue(item.Label, out count) ? count + 1 : 1;
+
+                foreach (var item in MultiHXML)
+                    if (dict.TryGetValue(item.Label, out count) && count > 1)
+                        item.Label = item.Target.ToUpper() + " " + Path.GetFileName(item.Output);
             }
         }
 
@@ -545,20 +554,11 @@ namespace ProjectManager.Projects.Haxe
 
         internal void SafelyInsertTo(List<SingleTarget> list)
         {
-            if ( string.IsNullOrEmpty(this.Target) ) return;
-            LabelHack();
-            var dup = new List<SingleTarget>();
-            foreach (var item in list)
-                if (item.Label == Label) dup.Add(item);
-            if (dup.Count > 0)
+            if (!string.IsNullOrEmpty(this.Target))
             {
-                dup.Add(this);
-                foreach(var item in dup)
-                {
-                    item.Label = item.Target.ToUpper() + " " + Path.GetFileName(item.Output);
-                }
+                LabelHack();
+                list.Add(this);
             }
-            list.Add(this);
         }
         // Clone without .Target
         internal SingleTarget Duplicate()
