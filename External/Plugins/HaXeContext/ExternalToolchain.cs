@@ -200,6 +200,7 @@ namespace HaXeContext
                     dumpSelector.Items.AddRange(DumpConfig.All);
                     dumpSelector.FlatCombo.SelectionChangeCommitted += delegate { hxproj.Dump.Mode = dumpSelector.Text; };
                     PluginBase.MainForm.ToolStrip.Items.Add(dumpSelector);
+                    dumpSelector.FlatCombo.AfterTheming();
                 }
                 else if (!dumpSelector.Visible)
                 {
