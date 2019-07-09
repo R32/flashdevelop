@@ -40,7 +40,7 @@ namespace ProjectManager.Building.Haxe
                 {
                     if (current.Label == label)
                     {
-                        project.TargetSelect(current);
+                        project.TargetSelect(current, false);
                         project.MovieOptions.Platform = current.Name;
                         output = current.Output;
                         break;

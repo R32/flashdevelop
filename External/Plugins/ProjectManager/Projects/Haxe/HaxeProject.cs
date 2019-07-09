@@ -151,7 +151,7 @@ namespace ProjectManager.Projects.Haxe
             return s;
         }
 
-        public string[] BuildHXML(string[] paths, string outfile, bool release)
+        public List<string> BuildHXML(string[] paths, string outfile, bool release)
         {
             var pr = new List<string>();
             var isFlash = IsFlashOutput;
@@ -264,7 +264,7 @@ namespace ProjectManager.Projects.Haxe
                         pr.Insert(2, "--no-inline");
                 }
             }
-            return pr.ToArray();
+            return pr;
         }
 
         private string GetClassName(string absTarget, string cp)
@@ -344,7 +344,7 @@ namespace ProjectManager.Projects.Haxe
             TargetSelect(current);
         }
 
-        public void TargetSelect(SingleTarget current)
+        public void TargetSelect(SingleTarget current, bool rewrite = true)
         {
             string[] labels = new string[MultiHXML.Count];
             int i = 0;
@@ -370,6 +370,13 @@ namespace ProjectManager.Projects.Haxe
                 {
                     MovieOptions.TargetBuildTypes = labels;
                     TargetBuild = current.Label ?? "";
+                    if (rewrite) // rewrite rawHXML for HaxeComplete
+                    {
+                        rawHXML = null;
+                        var list = BuildHXML(new string[0], "", true); // HaxeTarget is null when hxml
+                        list.Add("-" + current.Target + " " + current.Output);
+                        rawHXML = list.ToArray();
+                    }
                 }
                 else
                 {

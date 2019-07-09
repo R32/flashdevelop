@@ -115,7 +115,7 @@ namespace HaXeContext
 
             // Build Haxe command
             var paths = ProjectManager.PluginMain.Settings.GlobalClasspaths.ToArray();
-            var hxmlArgs = new List<string>(project.BuildHXML(paths, "Nothing__", true));
+            var hxmlArgs = project.BuildHXML(paths, "Nothing__", true);
             RemoveComments(hxmlArgs);
             QuotePath(hxmlArgs);
             EscapeMacros(hxmlArgs);
