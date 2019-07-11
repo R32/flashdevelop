@@ -1026,7 +1026,8 @@ namespace HaXeContext.Completion
                     }
                     if (wordBefore == "return")
                     {
-                        if (isUntyped) member.Type = ASContext.Context.Features.dynamicKey;
+                        if (isUntyped || expr.Value.Split('.')[0] == member.Name)
+                            member.Type = ASContext.Context.Features.dynamicKey;
                         else
                         {
                             var expressionType = GetExpressionType(sci, i, false, true);
