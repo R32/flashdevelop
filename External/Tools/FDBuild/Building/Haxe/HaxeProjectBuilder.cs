@@ -46,7 +46,6 @@ namespace ProjectManager.Building.Haxe
                         break;
                     }
                 }
-                project.MultiHXML.Clear();
             }
             string serverPort = Environment.ExpandEnvironmentVariables("%HAXE_SERVER_PORT%");
             string connect = (!serverPort.StartsWith("%", StringComparison.Ordinal) && serverPort != "0")

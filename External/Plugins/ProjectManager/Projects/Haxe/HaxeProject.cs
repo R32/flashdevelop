@@ -157,7 +157,7 @@ namespace ProjectManager.Projects.Haxe
         public List<string> BuildHXML(string[] paths, string outfile, bool release)
         {
             var pr = new List<string>();
-            var isFlash = IsFlashOutput;
+            var isFlash = IsFlashOutput && !MultiHXML.Any();
 
             if (rawHXML != null)
             {
