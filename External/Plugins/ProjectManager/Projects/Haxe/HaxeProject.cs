@@ -522,7 +522,7 @@ namespace ProjectManager.Projects.Haxe
                 op = op.Substring(1);
             }
             var lang = PlatformData.SupportedLanguages["haxe"];
-            foreach (var platform in lang.Platforms.Values)
+            foreach (var platform in lang.Platforms.Values.Reverse()) // reverse that make "Flash Player" be earlier than "Air" if swf
             {
                 if (platform.HaxeTarget == op) return platform;
             }
