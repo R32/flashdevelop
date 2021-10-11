@@ -196,15 +196,9 @@ namespace ProjectManager.Projects.Haxe
 
                 if (mode != null)
                 {
-                    if (mode != "interp")
-                    {
-                        outfile = string.Join("/", outfile.Split('\\'));
-                        pr.Add("-" + mode + " " + Quote(outfile));
-                    }
-                    else
-                    {
-                        pr.Add("--" + "interp");
-                    }
+                    var prefix = mode == "interp" || mode == "jvm" ? "--" : "-";
+                    outfile = string.Join("/", outfile.Split('\\'));
+                    pr.Add(prefix + mode + " " + Quote(outfile));
                 }
 
                 // flash options

@@ -1,0 +1,5 @@
+<platform name="Jvm" haxe-target="jvm">
+  <versions>
+    <version value="1.0" />
+  </versions>
+</platform>
