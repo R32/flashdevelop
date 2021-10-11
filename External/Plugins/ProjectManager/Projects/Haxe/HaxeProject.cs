@@ -196,8 +196,15 @@ namespace ProjectManager.Projects.Haxe
 
                 if (mode != null)
                 {
-                    outfile = string.Join("/", outfile.Split('\\'));
-                    pr.Add("-" + mode + " " + Quote(outfile));
+                    if (mode != "interp")
+                    {
+                        outfile = string.Join("/", outfile.Split('\\'));
+                        pr.Add("-" + mode + " " + Quote(outfile));
+                    }
+                    else
+                    {
+                        pr.Add("--" + "interp");
+                    }
                 }
 
                 // flash options
@@ -517,7 +524,7 @@ namespace ProjectManager.Projects.Haxe
 
         private LanguagePlatform FindPlatform(string op, SingleTarget tar)
         {
-            if (op[0] == '-' && op != "-interp")
+            if (op[0] == '-')
             {
                 op = op.Substring(1);
             }
