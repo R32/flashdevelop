@@ -413,7 +413,7 @@ namespace ProjectManager.Projects.Haxe
             {
                 OutputPath = current.Output;
                 OutputType = OutputType.Application;
-                MovieOptions.Platform = FindPlatform(current.Target).Name;
+                MovieOptions.Platform = FindPlatform(current.Target, current).Name;
             }
         }
 
@@ -469,7 +469,7 @@ namespace ProjectManager.Projects.Haxe
                             current.Cwd = this.CleanPath(value, current.Cwd);
                             break;
                         default:
-                            var targetPlatform = FindPlatform(op);
+                            var targetPlatform = FindPlatform(op, current);
                             if (targetPlatform is null)
                             {
                                 current.Adds.Add(trimmedLine);
@@ -515,16 +515,25 @@ namespace ProjectManager.Projects.Haxe
             }
         }
 
-        private LanguagePlatform FindPlatform(string op)
+        private LanguagePlatform FindPlatform(string op, SingleTarget tar)
         {
             if (op[0] == '-' && op != "-interp")
             {
                 op = op.Substring(1);
             }
             var lang = PlatformData.SupportedLanguages["haxe"];
-            foreach (var platform in lang.Platforms.Values.Reverse()) // reverse that make "Flash Player" be earlier than "Air" if swf
+            foreach (var platform in lang.Platforms.Values)
             {
-                if (platform.HaxeTarget == op) return platform;
+                if (platform.HaxeTarget == op)
+                {
+                    if (op == "swf" && platform.Name.StartsWith("AIR"))
+                    {
+                        if (tar.Libs.Exists(s => s.StartsWith("air")))
+                            return platform;
+                        continue;
+                    }
+                    return platform;
+                }
             }
             return null;
         }
