@@ -426,7 +426,8 @@ namespace ProjectManager.Actions
 
                 info["platform"] = platform;
                 info["version"] = version;
-                if (platform == "hxml" && (project is HaxeProject hxproj))
+                HaxeProject hxproj = project as HaxeProject;
+                if (platform == "hxml")
                 {
                     info["targetBuild"] = "";
                     foreach (var hxml in hxproj.MultiHXML)
@@ -440,7 +441,8 @@ namespace ProjectManager.Actions
                 }
                 else
                 {
-                    info["targetBuild"] = project.TargetBuild;
+                    hxproj.MultiHXML.Clear();
+                    info["targetBuild"] = project.TargetBuild = platform;
                 }
                 info["lang"] = currentLang;
                 info["classpath"] = classPaths.ToArray();

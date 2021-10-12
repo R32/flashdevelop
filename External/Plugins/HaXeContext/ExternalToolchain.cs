@@ -238,6 +238,7 @@ namespace HaXeContext
             if (!HandleProject(project))
             {
                 StopWatcher();
+                project.MovieOptions.TargetBuildTypes = null;
                 return;
             }
             monitorState |= MonitorState.ProjectUpdate;
