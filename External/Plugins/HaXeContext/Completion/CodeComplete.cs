@@ -710,6 +710,8 @@ namespace HaXeContext.Completion
                                 t = t.Extends;
                                 while (!t.IsVoid())
                                 {
+                                    if (t.IndexType == null)
+                                        break;
                                     var types = t.IndexType.Split(',');
                                     for (var j = 0; j < types.Length; j++)
                                     {
