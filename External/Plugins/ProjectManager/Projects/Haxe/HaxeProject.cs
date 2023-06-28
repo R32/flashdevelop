@@ -158,7 +158,6 @@ namespace ProjectManager.Projects.Haxe
         {
             var pr = new List<string>();
             var isFlash = IsFlashOutput && !MultiHXML.Any();
-
             if (rawHXML != null)
             {
                 pr.AddRange(rawHXML);
@@ -189,18 +188,6 @@ namespace ProjectManager.Projects.Haxe
                     var ccp = string.Join("/", cp.Split('\\'));
                     pr.Add("-cp " + Quote(ccp));
                 }
-
-                // compilation mode
-                var mode = HaxeTarget;
-                //throw new SystemException("Unknown mode");
-
-                if (mode != null)
-                {
-                    var prefix = mode == "interp" || mode == "jvm" ? "--" : "-";
-                    outfile = string.Join("/", outfile.Split('\\'));
-                    pr.Add(prefix + mode + " " + Quote(outfile));
-                }
-
                 // flash options
                 if (isFlash)
                 {
@@ -243,7 +230,6 @@ namespace ProjectManager.Projects.Haxe
                                 pr.Add(className);
                         }
                 }
-
                 // add main class
                 if (!string.IsNullOrEmpty(CompilerOptions.MainClass))
                     pr.Add("-main " + CompilerOptions.MainClass);
@@ -258,14 +244,19 @@ namespace ProjectManager.Projects.Haxe
                     if (parts.Length == 1) pr.Add(p);
                     else pr.Add(parts[0] + ' ' + Quote(parts[1]));
                 }
+                // compilation mode
+                var mode = HaxeTarget;
+                //throw new SystemException("Unknown mode");
+                if (mode != null)
+                {
+                    outfile = string.Join("/", outfile.Split('\\'));
+                    pr.Add("--" + mode + " " + Quote(outfile));
+                }
             }
-
             // debug
             if (!release)
             {
                 pr.Insert(0, "-debug");
-                if (CurrentSDK == null || !CurrentSDK.Contains("Motion-Twin")) // Haxe 3+
-                    pr.Insert(1, "--each");
                 if (isFlash && EnableInteractiveDebugger && CompilerOptions.EnableDebug)
                 {
                     pr.Insert(1, "-D fdb");
