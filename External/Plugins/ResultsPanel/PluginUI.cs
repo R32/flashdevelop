@@ -598,6 +598,7 @@ namespace ResultsPanel
                     }
                     // relative to project root (Haxe)
                     if (fileTest.StartsWithOrdinal("~/")) fileTest = fileTest.Substring(2);
+                    if (fileTest.StartsWithOrdinal("ERROR")) fileTest = fileTest.Substring("ERROR".Length + 2); // 2 spaces
                     var match = fileEntry.Match(fileTest);
                     if (!match.Success) match = fileEntry2.Match(fileTest);
                     if (match.Success && !ignoredEntries.ContainsKey(match.Value))

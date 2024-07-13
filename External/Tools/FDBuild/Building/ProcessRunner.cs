@@ -50,6 +50,7 @@ namespace ProjectManager.Building
     class LineFilter
     {
         static Regex reSplitError = new Regex(@"\.[a-z]+:[0-9]+$");
+        static Regex colorStrip = new Regex(@"\x1b\[(?:\d+;)?\d+m"); // new message.reporting from haxe 5
         TextReader reader;
         TextWriter writer;
         bool mergeErrors;
@@ -75,7 +76,7 @@ namespace ProjectManager.Building
                     if (unsplit != null) { line = unsplit + ":" + line; unsplit = null; }
                     else if (reSplitError.IsMatch(line)) { unsplit = line; continue; }
                 }
-                writer.WriteLine(line);
+                writer.WriteLine(colorStrip.Replace(line, ""));
                 writer.Flush();
                 
                 if (line.Length > 0) Lines++;
