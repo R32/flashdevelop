@@ -208,7 +208,7 @@ namespace ProjectManager.Actions
                     Environment.SetEnvironmentVariable("PLAYERGLOBAL_HOME", Path.Combine(project.CurrentSDK, "frameworks/libs/player"));
                 }
             }
-            else if (project is Projects.Haxe.HaxeProject hxproj)
+            else if (project is Projects.Haxe.HaxeProject hxproj && hxproj.Dump.Mode != "")
             {
                 arguments += " -dump " + hxproj.Dump.Mode;
             }
